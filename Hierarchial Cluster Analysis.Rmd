@@ -1,0 +1,21 @@
+---
+title: "Hierarchial Cluster Analysis"
+author: "Minh Ho"
+date: "5/25/2021"
+output: html_document
+---
+```{r}
+ # Load the data
+data(iris)
+iris <- iris[, c(1, 3, 5)]
+ # Scaling the data as it must be the same variance/ standard deviation to run clustering of anykind
+iris[ ,1] <- scale(iris[, 1])
+iris[ ,2] <- scale(iris[, 2])
+apply(iris[, c(1, 2)], 2, sd)
+```
+
+```{r}
+ # Calculate the distance matrix
+dist_matrix <- dist(iris[ , c(1, 2)])
+```
+

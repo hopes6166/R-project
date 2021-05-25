@@ -17,5 +17,26 @@ apply(iris[, c(1, 2)], 2, sd)
 ```{r}
  # Calculate the distance matrix
 dist_matrix <- dist(iris[ , c(1, 2)])
+hc_complete <- hclust(dist_matrix)
+hc_single <- hclust(dist_matrix, method = "single")
+hc_average <- hclust(dist_matrix, method = "average")
+
+plot(hc_complete)
+plot(hc_single)
+plot(hc_average)
+```
+
+```{r}
+library(ggplot2)
+ # simple function
+plot_cluster_slice <-  function(df, hc, numclusters) {
+  df$clusters <- as.factor(cutree(hc, k = numclusters))
+  ggplot(data = df, aes(x = Sepal.Length, y = Petal.Length, color = clusters)) + geom_point()
+}
+
+plot_cluster_slice(iris, hc_complete, 2)
+plot_cluster_slice(iris, hc_complete, 3)
+plot_cluster_slice(iris, hc_complete, 4)
+plot_cluster_slice(iris, hc_complete, 5)
 ```
 

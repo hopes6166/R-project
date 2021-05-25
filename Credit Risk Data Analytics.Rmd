@@ -1,0 +1,215 @@
+---
+output:
+  pdf_document: default
+  html_document: default
+---
+This is my quick data analytical on the Credit data. Balance is the Dependent Variable and others are Feature
+
+```{r}
+library(ISLR)
+data(Credit)
+summary(Credit)
+library(gridExtra)
+```
+
+```{r}
+ # deleting ID column
+Credit$ID <- NULL
+
+ # Exploratory Data Analysis
+
+library(ggplot2)
+ggplot(data = Credit, aes(x = Balance)) +
+  geom_histogram()
+```
+
+For Numeric variables
+
+```{r}
+vars.numeric <- colnames(Credit[ ,c(1:6)])
+
+for (i in vars.numeric) {
+  plot <- ggplot(data = Credit, aes(x = Credit[ ,i], y = Credit$Balance)) +
+    geom_point() +
+    geom_smooth(method = "lm") +
+    labs(x = i)
+    print(plot)
+}
+
+```
+
+CORRELATION ANALYSIS BETWEEN NUMERICAL DATA
+```{r}
+cortable <- cor(Credit[, vars.numeric])
+library(corrplot)
+corrplot(cortable, type = "upper")
+cortable
+```
+A strong correlation betwween Limit and Rating detected. To prevent collinearity, we can delete one of two variable
+
+```{r}
+Credit$Limit <- NULL
+```
+
+TARGET VARIABLE AND CATEGORICAL VARIABLE
+
+```{r}
+var.categorical <- colnames(Credit[, c("Gender", "Student", "Married", "Ethnicity")])
+for (i in var.categorical) {
+  plot <- ggplot(data = Credit, aes(x = Credit[, i], y = Balance)) +
+    geom_boxplot()+ 
+    labs(x = i)
+  print(plot)
+}
+```
+There are not so strong differences between Gender, Married and Ethnicity and Balance.
+
+TASK 2: SELECT INTERACTION
+We should focus on the important variable first: Student, Income and Rating. That is easier for us to find good interaction
+
+```{r}
+p1 <- ggplot(data = Credit, aes(x = log(Income), y = Balance, color = Student)) +
+  geom_point() +
+  geom_smooth(method = "lm")
+p2 <- ggplot(data = Credit, aes(x = Rating, y = Balance, color = Student)) +
+  geom_point() +
+  geom_smooth(method = "lm")
+grid.arrange(p1, p2, ncol = 2)
+```
+
+```{r}
+library(caret)
+set.seed(42)
+partition <- createDataPartition(Credit$Balance, p = .75, list = FALSE)
+train <- Credit[partition, ]
+test <- Credit[-partition, ]
+print("TRAIN")
+mean(train$Balance)
+print("TEST")
+mean(test$Balance)
+```
+
+```{r}
+for (i in var.categorical) {
+  table <- as.data.frame(table(Credit[, i]))
+  max <- which.max(table[, 2])
+  level.name <- as.character(table[max, 1])
+  Credit[ ,i] <- relevel(Credit[ ,i], ref = level.name)
+}
+
+summary(Credit[, var.categorical])
+
+```
+
+```{r}
+# Make all train are re-level, we run this code again
+train <- Credit[partition, ]
+model.full <- lm(data = train, Balance ~ . + Income: Student + Rating: Student)
+summary(model.full)
+
+```
+REMOVING NON PREDICTIVE FEATURES
+Using StepAIC functions from MASS package/ forward or backward to remove non predictive feature. Use AIC(k = 2) or BIC(k = log(nrow(train)))
+
+Also firstly we should do the binariztion.
+```{r}
+binarizer <- dummyVars(paste("~ ", paste(var.categorical, collapse = "+")), data = Credit, fullRank = TRUE)
+binarized_var <- data.frame(predict(binarizer, newdata = Credit))
+head(binarized_var)
+```
+
+```{r}
+Credit.bin <- cbind(Credit, binarized_var)
+Credit.bin$Student <- NULL
+Credit.bin$Ethnicity <- NULL
+Credit.bin$Gender <- NULL
+Credit.bin$Married <- NULL
+head(Credit.bin)
+```
+
+```{r}
+ # train test split
+train <- Credit.bin[partition, ]
+test <- Credit.bin[-partition, ]
+model.full.bin <- lm(data= train, Balance ~. + Income:Student.Yes + Rating: Student.Yes)
+summary(model.full.bin)
+```
+
+```{r}
+ # droping (backward selection)
+drop1(model.full.bin)
+```
+USING stepAIC() function
+
+```{r}
+library(MASS)
+```
+```{r}
+model.backward <- stepAIC(model.full.bin)
+```
+```{r}
+summary(model.backward)
+```
+
+FORWARD STEPWISE MODEL SELECTION
+
+```{r}
+model.null <- lm(Balance ~ 1, data = train)
+model.forward <- stepAIC(model.null, direction = "forward", scope = list(upper = model.full.bin, lower = model.null))
+
+```
+
+```{r}
+summary(model.forward)
+```
+TRY AGAIN WITH BIC SCORE
+
+```{r}
+ #  Backward selection
+model.backward.bic <- stepAIC(model.full.bin,  direction = "backward",  k = log(nrow(train)))
+summary(model.backward.bic)
+```
+FORWARD WITH BIC
+
+```{r}
+model.forward.bic <- stepAIC(model.null, scope = list(upper = model.full.bin, lower = model.null), direction = "forward", k = log(nrow(train)))
+```
+MODEL VALIDATION
+
+```{r}
+rmse  <- function(observed, predicted) {
+  sqrt(mean((observed - predicted)^2))
+}
+print("BACKWARD MODEL BIC")
+rmse(test$Balance, predict(model.backward.bic, newdata = test))
+print("BACKWARD MODEL AIC")
+rmse(test$Balance, predict(model.backward, newdata = test))
+print("FULL MODEL")
+rmse(test$Balance, predict(model.full.bin, newdata = test))
+print("NULL MODEL")
+rmse(test$Balance, predict(model.null, newdata = test))
+
+```
+```{r}
+plot(model.backward.bic)
+```
+
+USING GLMNET TO CREATE A MODEL BY PENALIZED TERM
+
+```{r}
+ # Create a matrix that can be consumed by glmnet - only quantitative input can be consumed by the function
+train <- Credit[partition, ]
+test <- Credit[-partition, ]
+X.train <- model.matrix(Balance ~. + Rating:Student + Income:Student, data = train)
+library(glmnet)
+lasso <- glmnet(x = X.train, y = train$Balance, alpha = 1, lambda = 10^(3:0))
+coef(lasso)
+```
+
+```{r}
+library(glmnet)
+set.seed(1111)
+m <-cv.glmnet(x = X.train, y = train$Balance, family = "gaussian", alpha = 1)
+plot(m)
+```
+

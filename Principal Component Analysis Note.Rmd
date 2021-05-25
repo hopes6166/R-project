@@ -1,0 +1,98 @@
+---
+title: "R Notebook for Principal Component Analysis"
+output: html_notebook
+---
+
+This is an [R Markdown](http://rmarkdown.rstudio.com) Notebook. When you execute code within the notebook, the results appear beneath the code. 
+
+Try executing this chunk by clicking the *Run* button within the chunk or by placing your cursor inside it and pressing *Cmd+Shift+Enter*. 
+
+```{r}
+data("USArrests")
+summary(USArrests)
+```
+```{r}
+apply(USArrests, 2, mean) # 2 meaning applying the function to the columns
+
+```
+```{r}
+ # Explanatory data analysis
+library(ggplot2)
+library(gridExtra)
+p1 <- ggplot(data = USArrests, aes(x = Murder)) + geom_histogram()
+p2 <- ggplot(data = USArrests, aes(x = Assault)) + geom_histogram()
+p3 <- ggplot(data = USArrests, aes(x = UrbanPop)) + geom_histogram()
+p4 <- ggplot(data =  USArrests, aes(x = logRape)) + geom_histogram()
+plots <- list(p1, p2, p3, p4)
+do.call("grid.arrange", c(plots, ncol = 2))
+```
+```{r}
+ # Using for loop to draw the same plot above
+for  (i in names(USArrests)) {
+  plot <-ggplot(data = USArrests, aes(x = USArrests[, i])) + geom_histogram() + labs(x = i)
+  print(plot)
+}
+```
+
+```{r}
+USArrests$logRape <- log(USArrests$Rape)
+USArrests$Rape <- NULL
+summary(USArrests$logRape)
+```
+Because Rape is skewed, median < mean, we log transformed it
+
+```{r}
+ # Principal Component Analysis
+PCA <- prcomp(USArrests, center = TRUE, scale. = TRUE)
+summary(PCA)
+```
+
+```{r}
+PCA_uncentered  <- prcomp(USArrests, center = FALSE, scale. = TRUE)
+summary(PCA_uncentered)
+```
+
+```{r}
+PCA_unscaled <- prcomp(USArrests, center = TRUE, scale. = FALSE)
+summary(PCA_unscaled)
+```
+
+
+```{r}
+biplot(PCA, scale = 0, cex = .6)
+```
+Feature engineering
+
+```{r}
+ # Method 1: immediately transforms the PC1 into the Crime feature
+USArrests.1  <- USArrests # Cloning USArrest
+USArrests.1$crime1 <- PCA$x[, 1] # making new feature Crime 1 as PC1
+head(USArrests.1)
+```
+But it might be complicated because PC1 includes many features. In this case we only need 3 variable into that feature: Murder, Assault and logRape
+So, we apply method 2
+
+```{r}
+USArrests.2 <- USArrests
+USArrests.scaled <- as.data.frame(scale(USArrests.2))
+USArrests.2$crime2 <- USArrests.scaled$Murder * PCA$rotation[1,1] + USArrests.scaled$Assault * PCA$rotation[2,1] + USArrests.scaled$logRape * PCA$rotation[4,1]
+head(USArrests.2)
+```
+Method 3
+Running PCA with just 3 features of Crime
+Then extract the new feature of total Crime
+```{r}
+USArrests.3 <- USArrests  # Cloning USArrests
+PCA.3 <- prcomp(USArrests.3[, c(1,2,4)], center = TRUE, scale. = TRUE)
+PCA.3$rotation
+USArrests.3$crime3 <- PCA.3$x[, 1]
+head(USArrests.3)
+```
+
+We pick Method 2 as recommended in the PA Exam 2019.
+We have to delete Murder, Assault and logRape
+```{r}
+USArrests.2[, c(1, 2, 4)] <- NULL
+names(USArrests.2)
+```
+

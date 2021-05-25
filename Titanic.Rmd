@@ -1,0 +1,90 @@
+---
+title: "Titanic"
+author: "Minh Ho"
+date: "1/13/2021"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## R Markdown
+
+This is an R Markdown document. Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. For more details on using R Markdown see <http://rmarkdown.rstudio.com>.
+
+When you click the **Knit** button a document will be generated that includes both content as well as the output of any embedded R code chunks within the document. You can embed an R code chunk like this:
+
+```{r cars}
+summary(cars)
+```
+
+```{r}
+install.packages("psych")
+install.packages("Amelia")
+library(psych)
+```
+
+```{r}
+data.frame = read.csv("/Users/apple/Downloads/train.csv",na.strings = "")
+summary(data.frame)
+```
+```{r}
+library(Amelia)
+missmap(data.frame, col = c("black", "grey"))
+```
+```{r}
+install.packages("RCurl")
+```
+```{r}
+library(stringr)
+
+```
+```{r}
+class(as.vector(data.frame["Name"]))
+class(data.frame[["Name"]])
+class(data.frame[,2])
+```
+```{r}
+data.frame = select(data.frame, Survived, Pclass, Age, Sex, SibSp, Parch)
+data.frame = na.omit(data.frame)
+```
+
+
+```{r}
+str(data.frame)
+```
+```{r}
+data.frame$Survived = factor(data.frame$Survived)
+data.frame$Pclass = factor(data.frame$Pclass, order=TRUE, levels = c(3, 2, 1))
+```
+
+```{r}
+install.packages("dplyr")
+```
+
+```{r}
+library(GGally)
+ggcorr(data.frame,
+       nbreaks = 6,
+       label = TRUE,
+       label_size = 3,
+       color = "grey50")
+```
+```{r}
+library(ggplot2)
+ggplot(data.frame, aes(x = Survived))+
+  geom_bar(width=0.5, fill = "blue") +
+  geom_text(stat='count', aes(label=stat(count)), vjust=-0.5) +
+  theme_classic()
+```
+
+## Including Plots
+
+You can also embed plots, for example:
+
+```{r pressure, echo=FALSE}
+plot(pressure)
+```
+
+Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.

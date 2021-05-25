@@ -1,0 +1,71 @@
+---
+title: "Housing Value in Suburbs of Boston"
+output:
+  pdf_document: default
+  html_notebook: default
+---
+```{r}
+library(MASS)
+library(corrplot)
+```
+
+```{r}
+str(Boston)
+summary(Boston)
+corrplot(cor(Boston))
+```
+
+#We can see that:  
+rm (Average number of rooms per dwelling) strongly and positively affects medv.
+lstat strongly and negatively affects medv
+some variables positively affects medv:  
+* zn (proportion of residential land zoned for lots over 25k sq ft)  
+* chas (bounds river or not)  
+* dis (weighted distance to Boston employment centres)  
+* black (proportion of black by town)  
+
+some variable negatively affects medv:  
+* crim (criminal rate)  
+* indus (non retail biz acres per town)  
+* nox (NO2 concentration)  
+* age ( of the town)  
+* rad (accessibility to radial highways)
+* tax (full value property tax rate)
+* ptratio (pupil teacher ratio by town)
+
+```{r}
+#Predict per capita rate crime based on other variable
+lm.fit = lm(crim ~ ., data = Boston)
+summary(lm.fit)
+```
+
+```{r}
+varlist <- names(Boston)[2:14]
+models <- lapply(varlist, function(x) {
+  lm(substitute(crim ~ i, list(i = as.name(x))), data = Boston)
+})
+lapply(models, summary)
+```
+All variables are significant except chas.
+
+```{r}
+lm.fit_mlr = lm(crim ~ ., data = Boston)
+summary(lm.fit_mlr)
+```
+We can reject null hypothesis with variables: zn, dis, rad, black, medv
+
+```{r}
+summary(Boston$crim)
+hist(Boston$crim)
+boxplot(Boston$crim)
+```
+
+
+
+
+Add a new chunk by clicking the *Insert Chunk* button on the toolbar or by pressing *Cmd+Option+I*.
+
+When you save the notebook, an HTML file containing the code and output will be saved alongside it (click the *Preview* button or press *Cmd+Shift+K* to preview the HTML file). 
+
+The preview shows you a rendered HTML copy of the contents of the editor. Consequently, unlike *Knit*, *Preview* does not run any R code chunks. Instead, the output of the chunk when it was last run in the editor is displayed.
+

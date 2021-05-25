@@ -1,0 +1,314 @@
+---
+title: "Data visualization with ggplot"
+author: "Minh Ho"
+date: "4/1/2021"
+output: html_document
+---
+```{r}
+library(ggplot2)
+ggplot(data = mtcars, mapping = aes(x = wt, y = mpg)) + 
+  geom_point(size = 5, alpha = .4) + 
+  geom_smooth(method = "lm")
+```
+
+```{r}
+ #  with am.fac on the ggplot mapping aes color
+mtcars$am.fac <- factor(mtcars$am, levels = c(0, 1), labels = c("Automatic", "Manual"))
+ggplot(data = mtcars, mapping = aes(x = wt, y = mpg, color = am.fac)) + 
+  geom_point(size = 5, alpha = .4) + 
+  geom_smooth(method = "lm")
+```
+```{r}
+ # with color on the geom point
+ggplot(data = mtcars, mapping = aes(x = wt, y = mpg)) + 
+  geom_point(size = 5, alpha = .4, aes(color = am.fac)) + 
+  geom_smooth(method = "lm")
+```
+```{r}
+ggplot(data = mtcars, mapping = aes(x = wt, y = mpg, fill = am.fac, color = am.fac)) + 
+  geom_point(size = 5, alpha = .4) + 
+  geom_smooth(method = "lm")
+```
+```{r}
+ggplot(data = mtcars, mapping = aes(x = wt, y = mpg, fill = am.fac)) + 
+  geom_point(aes(color = am.fac), size = 5, alpha = .4) + 
+  geom_smooth(method = "lm", se = FALSE)
+```
+```{r}
+ggplot(data = mtcars, mapping = aes(x = wt, y = mpg)) + 
+  geom_point(aes(color = am.fac), size = 5, alpha = .4) + 
+  geom_smooth(aes(fill = am.fac), method = "lm", se = TRUE)
+```
+```{r}
+ggplot(data = mtcars, mapping = aes(x = wt, y = mpg, fill = am.fac, color = am.fac)) + 
+  geom_point(size = 5, alpha = .4) + 
+  geom_smooth(method = "lm", se = TRUE)
+```
+We can see that the two chunk above seem pretty much the same, except the smooth line inside each regression of automatic and manual.
+ggplot function is use to input the data and divide it
+geom_point define the plot to be point plot
+geom_smooth draw the linear model fitting line with or without SE
+
+FACETING
+
+```{r}
+ggplot(data = mtcars, mapping = aes(x = wt, y = mpg)) +
+  geom_point(size = 5, alpha = .4) +
+  geom_smooth(method = "lm") + 
+  facet_wrap(~am.fac)
+```
+
+
+```{r}
+mtcars$vs.fac <- factor(mtcars$vs, levels = c(0, 1), labels = c("V-shaped", "straight"))
+ggplot(data = mtcars, mapping = aes(x = wt, y = mpg)) +
+  geom_point(size = 5, alpha = .4) + 
+  geom_smooth(method = lm) +
+  facet_grid(vs.fac ~ am.fac)
+```
+
+I think that we can do multiple facetting grid by the same way y ~ x1 + x2....
+
+```{r}
+ggplot(data = mtcars, aes(x = wt, y = mpg, color = vs.fac)) +
+  geom_point(size = 5, alpha = .4) +
+  facet_wrap(~ am.fac)
+```
+```{r}
+ #  Draw a plot with name of x and y with xlim
+ggplot(data = mtcars, mapping = aes(x = wt, y = mpg)) + 
+  geom_point(size = 5, alpha = .4) +
+  labs(title = "Automobile data", x = "Weight", y = "Miles per gallon") +
+  xlim(2, 4)
+  
+```
+Using gridExtra like this
+
+```{r}
+p1 <- ggplot(data = mtcars, mapping = aes(x = wt, y = mpg)) + 
+  geom_point(aes(color = am.fac), size = 5, alpha = .4) + 
+  geom_smooth(aes(fill = am.fac), method = "lm", se = TRUE)
+p2 <- ggplot(data = mtcars, mapping = aes(x = wt, y = mpg)) + 
+  geom_point(size = 5, alpha = .4) +
+  labs(title = "Automobile data", x = "Weight", y = "Miles per gallon") +
+  xlim(2, 4)
+grid.arrange(p1, p2, nrow = 2)
+```
+
+Case study about Personal Injury Insurance Claims
+
+```{r}
+persinj <- read.csv("/Users/apple/Downloads/R Files For PA Exam/persinj.csv")
+summary(persinj$amt)
+```
+
+```{r}
+ #  Summary on the amount of claim of with and without legrep
+persinj.0 <- persinj[persinj$legrep == 0, ]
+persinj.1 <- persinj[persinj$legrep == 1, ]
+
+summary(persinj.0$amt)
+summary(persinj.1$amt)
+
+plot1 <- ggplot(data = persinj, mapping = aes(x = amt)) +
+  geom_histogram() + 
+  labs(title = "boxplot of all amount combine") +
+  xlim(0, 100000)
+
+plot2 <- ggplot(data = persinj.0, mapping = aes(x = amt)) + 
+  geom_histogram() +
+  labs(title = "Claim amount with no legal representative") +
+  xlim(0, 100000)
+
+plot3 <- ggplot(data = persinj.1, mapping = aes(x = amt)) + 
+  geom_histogram() + 
+  labs(title = "Claim amount with legal representative") + 
+  xlim(0, 100000)
+
+grid.arrange(plot1, plot2, plot3, ncol = 2)
+
+```
+```{r}
+ #  We see that it is the skewness in the histogram. I would like to logtransform it
+
+plot1 <- ggplot(data = persinj, mapping = aes(x = log(amt))) +
+  geom_histogram() + 
+  labs(title = "boxplot of all amount combine")
+
+plot2 <- ggplot(data = persinj.0, mapping = aes(x = log(amt))) + 
+  geom_histogram() +
+  labs(title = "Claim amount with no legal representative")
+
+plot3 <- ggplot(data = persinj.1, mapping = aes(x = log(amt))) + 
+  geom_histogram() + 
+  labs(title = "Claim amount with legal representative")
+
+grid.arrange(plot1, plot2, plot3, ncol = 2)
+```
+We can set bin equal some number such as 20, 40, 80 by function geom_histogram(bins = 20) for example.
+
+
+FOR CATEGORICAL VARIABLE
+
+1. We can use frequency table using function table() or barchart to draw it
+
+```{r}
+table(persinj$inj)
+ggplot(data = persinj, mapping = aes(x = inj)) +
+  geom_bar(fill = "blue")
+```
+
+We see that the number of injuries does not display as we want: 0, 1, 2, 3...
+We have to convert the number of injuries to factor. As well as the legrep. We can display number by default or using aes(y = ..prop) to display proportion
+
+```{r}
+persinj$inj <- as.factor(persinj$inj)
+persinj$legrep <- as.factor(persinj$legrep)
+ggplot(data = persinj, mapping = aes(x = inj)) +
+  geom_bar(fill = "blue", aes(y = ..prop.., group = 1))
+```
+
+ABOUT UNIVARIATE VARIABLE
+
+```{r}
+  # Between op_time and amt
+p1 <- ggplot(data = persinj, mapping = aes(x = op_time, y = amt)) +
+  geom_point(alpha = .07) +
+  geom_smooth(method = "lm", se = FALSE)
+  labs(title = "Relationship between Operation Time and Paid Amount")
+p2 <- ggplot(data = persinj, mapping = aes(x = op_time, y = log(amt))) +
+  geom_point(alpha = .07) + 
+  geom_smooth(method = "lm", se = FALSE) +
+  labs(title = "Relationship between Operation and Log-Transformed Paid Amount")
+grid.arrange(p1, p2, ncol = 2)
+```
+If we want to draw color distinguised scatterplot (by legal representation)
+```{r}
+ggplot(data = persinj, mapping = aes(x = op_time, y = log(amt), color = legrep)) +
+  geom_point(alpha = .25) +
+  geom_smooth(method = "lm", se = TRUE)
+```
+
+NUMERICAL AND CATEGORICAL VARIABLE
+
+```{r}
+ggplot(data = persinj, mapping = aes(x = inj, y = log(amt), fill = inj))+ 
+  geom_boxplot()
+
+ggplot(data = persinj, mapping = aes(x = inj, y = log(amt), fill = legrep)) + 
+  geom_boxplot()
+```
+
+CATEGORICAL VS CATEGORICAL (INJ vs LEGREP)
+```{r}
+table(persinj$inj, persinj$legrep)
+p1 <- ggplot(data = persinj, mapping = aes(x = inj, fill = legrep))+
+  geom_bar()
+p2 <- ggplot(data = persinj, mapping = aes(x = inj, fill = legrep)) + 
+  geom_bar(position = "dodge")
+p3 <- ggplot(data = persinj, mapping = aes(x = inj, fill = legrep)) + 
+  geom_bar(position = "fill") +
+  ylab("Proprotion")
+grid.arrange(p1, p2, p3, ncol = 2)
+```
+
+END OF CHAPTER PRACTICE PROBLEMS
+
+```{r}
+p1 <- ggplot(data = persinj, mapping = aes(x = inj, fill = legrep)) + 
+  geom_bar()
+p2 <- ggplot(data = persinj, mapping = aes(x = inj, color = legrep)) +
+  geom_bar()
+
+p4 <- ggplot(data = persinj, mapping = aes(x = inj)) +
+  geom_bar(aes(fill = legrep))
+
+grid.arrange(p1, p2, p4, ncol = 2)
+```
+
+EXERCISE 2
+
+10 cols, 53940 rows
+```{r}
+data(diamonds)
+names(diamonds)
+dim(diamonds)
+```
+alternatively we can use nrow(diamonds) and length(colnames(diamonds))
+
+```{r}
+lapply(diamonds, class)
+```
+
+UNIVARIATE DATA EXPLORATION
+For diamond cut and price
+
+```{r}
+summary(diamonds$price)
+```
+
+We see mean is much higher than median, indicating right skewness
+
+```{r}
+ggplot(data = diamonds, mapping = aes(x = price)) + 
+  geom_histogram()
+ggplot(data = diamonds, mapping = aes(x = log(price))) +
+  geom_histogram()
+```
+
+We see that the distribution of log(price) are more normal. 
+
+```{r}
+ #  Delete the price, change to log(price)
+diamonds$Lprice <- log(diamonds$price)
+diamonds$price <- NULL
+names(diamonds)
+```
+
+```{r}
+table(diamonds$cut)
+ggplot(data = diamonds, mapping = aes(x = cut)) +
+  geom_bar()
+```
+
+RELATIONSHIP BETWEEN LPRICE AND CARAT
+```{r}
+cor(diamonds$Lprice, diamonds$carat)
+ggplot(data = diamonds, mapping = aes(x = carat, y = Lprice)) + 
+  geom_point(alpha = .2) 
+
+cor(log(diamonds$carat), diamonds$Lprice)
+ggplot(data = diamonds, mapping = aes(x = log(carat), y = Lprice)) + 
+  geom_point(alpha = .2)
+```
+
+```{r}
+summary(diamonds$carat)
+ggplot(data = diamonds, mapping = aes(x = carat)) + 
+  geom_histogram()
+
+summary(log(diamonds$carat))
+ggplot(data = diamonds, mapping = aes(x = log(carat))) + 
+  geom_histogram()
+```
+
+```{r}
+ggplot(data = diamonds, mapping = aes(x = cut)) +
+  geom_bar()
+
+ggplot(data = diamonds, mapping = aes(y = Lprice, x = cut)) + 
+  geom_boxplot()
+```
+
+E. Why the price drop when cut is better?
+
+I think that the cut is ideal account for much of the diamonds, I think that the cutting technique is quite close to perfect for all size of diamond. You can see on the bar of cut. Also, ideal cut has lower mean but higher variance, indicating it include both cheap and expensive diamond. 
+
+Let's also look at the relationship between cut and carat
+
+```{r}
+ggplot(data = diamonds, mapping = aes(x = cut, y = log(carat))) + 
+  geom_boxplot()
+```
+
+We see that the carat is smaller when cutting is ideal. That's also a big reason.

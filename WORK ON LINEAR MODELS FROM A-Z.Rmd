@@ -1,0 +1,61 @@
+---
+title: "R Notebook"
+output: html_notebook
+---
+COMPREHENSIVE WORK ON LINEAR MODEL
+* Fit a model with both quantitative and qualitative predictors
+* Interaction between predictors
+* Binnarize categorical predictors using dummyVar()
+* Select useful features using stepAIC()
+* Generate and interprete plot for LM
+* Implement Ridge and Lasso using glmnet() and cv.glmnet()
+
+Dataset to use: Credit
+```{r}
+library(ISLR)
+data(Credit)
+Credit$ID <- NULL
+sample(Credit)
+```
+
+```{r}
+summary(Credit)
+```
+
+Exploratory Data Analysis
+
+```{r}
+ # Set 
+p1 <- ggplot(data = Credit, mapping = aes(x = log(Income))) + 
+  geom_histogram(fill = "blue")
+
+p2 <- ggplot(data = Credit, mapping = aes(x = log(Limit))) + 
+  geom_histogram(fill = "blue")
+
+p3 <- ggplot(data = Credit, mapping = aes(x = log(Rating))) + 
+  geom_histogram(fill = "blue")
+
+p4 <- ggplot(data = Credit, aes(x = Cards)) + 
+  geom_bar(fill = "blue")
+
+p5 <- ggplot(data = Credit, aes(x = Age)) + 
+  geom_histogram(fill = "blue")
+
+p6 <- ggplot(data = Credit, aes(x = Education)) + 
+  geom_bar(fill = "blue")
+
+p7 <- ggplot(data = Credit, aes(x = Gender))  +
+  geom_bar(fill = "blue")
+
+p8 <- ggplot(data = Credit, aes(x = Student)) + 
+  geom_bar(fill = "blue")
+
+p9 <- ggplot(data = Credit, aes(x = Ethnicity)) + 
+  geom_bar(fill = "blue")
+
+p10 <- ggplot(data = Credit, aes(x = log(Balance))) + 
+  geom_histogram(fill = "blue")
+
+grid.arrange(p1, p2, p3, p4, p5, p6, p7, p8, p9, p10, ncol = 4)
+
+```

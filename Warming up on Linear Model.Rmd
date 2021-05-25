@@ -1,0 +1,182 @@
+---
+title: "Linear Regression"
+output: html_notebook
+---
+```{r}
+n <- 300
+n_sims <- 2000 # number of round of simulation
+x0 <- 0.75
+df.test <- data.frame(x = x0) # test set of one observation
+pred <- matrix(NA, nrow = n_sims, ncol = 5)
+mse <- matrix(NA, nrow = n_sims, ncol = 5)
+
+set.seed(1)
+for (i in 1:n_sims) {
+  x <- runif(n)
+  e <- rnorm(n, sd = .5)
+  y <- x^2 + e
+
+
+ # The training dataset for each round
+  df.train <- data.frame(x, y) # training set of n observation
+
+ # fit the five linear models to training set
+  model.0 <- lm(y ~ 1, data = df.train)
+  model.1 <- lm(y ~ x, data = df.train)
+  model.2 <- lm(y ~ poly(x, 2), data = df.train)
+  model.4 <- lm(y ~ poly(x, 4), data = df.train)
+  model.8 <- lm(y ~ poly(x, 8), data = df.train)
+
+  y0 <- x0^2 + rnorm(1, sd = .5)
+
+  # calculate the predicted value for each linear model
+  pred[i, 1] <- predict(model.0, newdata = df.test)
+  pred[i, 2] <- predict(model.1, newdata = df.test)
+  pred[i, 3] <- predict(model.2, newdata = df.test)
+  pred[i, 4] <- predict(model.4, newdata = df.test)
+  pred[i, 5] <- predict(model.8, newdata = df.test)
+
+  # calculate the MSE for each LM
+  mse[i, 1] <- (y0 - pred[i, 1])^2
+  mse[i, 2] <- (y0 - pred[i, 2])^2
+  mse[i, 3] <- (y0 - pred[i, 3])^2
+  mse[i, 4] <- (y0 - pred[i, 4])^2
+  mse[i, 5] <- (y0 - pred[i, 5])^2
+}
+
+for (i in 1:5) {
+  print(mean(mse[, i]))
+}
+```
+VISUALIZING THE PREDICTIONS BY DIFFERENT DEGREES
+```{r}
+ # Create a dataframe with pred and degrees
+pred <- c(pred[, 1], pred[, 2], pred[, 3], pred[, 4], pred[, 5])
+mse <- c(mse[, 1], mse[, 2], mse[, 3], mse[, 4], mse[, 5])
+model_deg  <- as.factor(rep(c(0, 1, 2, 4, 8), each = n_sims))
+df <- data.frame(pred, model_deg)
+
+ggplot(data = df, aes(x = model_deg, y = pred)) +
+  geom_boxplot(fill = "red") + 
+  geom_hline(yintercept =  x0^2, linetype = "dashed") +
+  labs(x = "Degree", y = "Prediction")
+```
+CASE STUDY - ADVERTISING
+
+```{r}
+ad <- read.csv("/Users/apple/Downloads/R Files For PA Exam/Advertising.csv")
+```
+```{r}
+ # deleting X
+ad$X <- NULL
+ # Data exploration
+summary(ad)
+ # Because of all numerical variable, I will explore them by drawing histogram
+
+p1 <- ggplot(data = ad, mapping = aes(x = TV)) + 
+  geom_histogram()
+
+p2 <- ggplot(data = ad, mapping = aes(x = radio)) +
+  geom_histogram()
+
+p3 <- ggplot(data = ad, mapping = aes(x = newspaper)) + 
+  geom_histogram()
+
+p4 <- ggplot(data = ad, mapping = aes(x = sales)) + 
+  geom_histogram()
+library(gridExtra)
+grid.arrange(p1, p2, p3, p4, ncol = 2)
+
+```
+```{r}
+ # Draw plots of scatterplots sales vs other feature
+p1 <- ggplot(data = ad, aes(x = TV, y = sales)) + 
+  geom_point() +
+  geom_smooth(method= "lm")
+
+p2 <- ggplot(data = ad, aes(x = radio, y = sales)) + 
+  geom_point() +
+  geom_smooth(method= "lm")
+
+p3 <- ggplot(data = ad, aes(x = newspaper, y = sales)) + 
+  geom_point() +
+  geom_smooth(method= "lm")
+
+grid.arrange(p1, p2, p3, ncol = 2)
+```
+SIMPLE LINEAR REGRESSION SALES OVER OTHER FEATURES
+
+```{r}
+model.slr <- lm(sales ~ TV, data = ad)
+summary(model.slr)
+```
+```{r}
+pred.int <- predict(model.slr, interval = "prediction")
+ad.pred <- cbind(pred.int, ad)
+ggplot(data = ad.pred, aes(x = TV, y = sales)) + 
+  geom_point() +
+  geom_smooth(method = "lm") +
+  geom_line(aes(y = lwr), linetype = "dashed") +
+  geom_line(aes(y = upr), linetype = "dashed")
+```
+MODEL OF TV AND RADIO WITH INTERACTION
+
+```{r}
+model.3 <- lm(sales ~ TV * radio, data = ad)
+summary(model.3)
+```
+```{r}
+# predicting different scenario: 100k on TV, 50k on radio and 70k on radio
+df <- data.frame(TV = c(100, 50, 30), radio = c(0, 50, 70))
+predict(model.3, newdata = df, interval = "confidence")
+```
+MODEL WITH POLINOMIAL TERMS
+
+```{r}
+model.4 <- lm(sales ~ TV + I(TV^2), data = ad)
+summary(model.4)
+```
+CREATE DATA PARTITION
+
+```{r}
+library(caret)
+set.seed(1)
+partition <- createDataPartition(ad$sales, p = 0.7, list = FALSE)
+train <- ad[partition, ]
+test <- ad[-partition, ]
+print("Train")
+summary(train$sales)
+print("Test")
+summary(test$sales)
+```
+
+NOW CREATE 5 MODELS
+```{r}
+model.1.tr <- lm(sales ~ TV + radio + newspaper, data = train)
+model.2.tr <- lm(sales ~ TV + radio, data = train)
+model.3.tr <- lm(sales ~ TV*radio, data = train)
+model.4.tr <- lm(sales ~ TV*radio + I(TV^2), data = train)
+model.5.tr <- lm(sales ~ TV*radio + I(TV^2) + I(radio^2), data = train)
+```
+
+CREATE A FUNCTION TO CALCULATE RMSE
+```{r}
+rmse <- function(observed, predicted) {
+  sqrt(mean((observed - predicted)^2))
+}
+
+print("training rmse")
+rmse(train$sales, predict(model.1.tr))
+rmse(train$sales, predict(model.2.tr))
+rmse(train$sales, predict(model.3.tr))
+rmse(train$sales, predict(model.4.tr))
+rmse(train$sales, predict(model.5.tr))
+
+print("testing rmse")
+rmse(test$sales, predict(model.1.tr, newdata = test))
+rmse(test$sales, predict(model.2.tr, newdata = test))
+rmse(test$sales, predict(model.3.tr, newdata = test))
+rmse(test$sales, predict(model.4.tr, newdata = test))
+rmse(test$sales, predict(model.5.tr, newdata = test))
+```
+
